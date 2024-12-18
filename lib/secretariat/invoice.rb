@@ -67,7 +67,13 @@ module Secretariat
         taxes[line_item.tax_percent] = Tax.new(tax_percent: BigDecimal(line_item.tax_percent)) if taxes[line_item.tax_percent].nil?
         taxes[line_item.tax_percent].tax_amount += BigDecimal(line_item.tax_amount)
         taxes[line_item.tax_percent].base_amount += BigDecimal(line_item.net_amount) * line_item.quantity
-        taxes[line_item.tax_percent].category_code = line_item.tax_category
+
+        # This will be used to handle multiple categories for the same tax_percent
+        # if for a specific tax percent, one of the line_items has a category code :TAXEXEMPT
+        # then this will be the shown category code for the current tax_percent
+        unless taxes[line_item.tax_percent].category_code == :TAXEXEMPT
+          taxes[line_item.tax_percent].category_code = line_item.tax_category
+        end
       end
       taxes.values
     end
