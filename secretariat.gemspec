@@ -18,10 +18,10 @@ Gem::Specification.new do |s|
   s.date        = '2024-11-06'
   s.summary     = "A ZUGFeRD xml generator"
   s.description = "a tool to help generate and validate ZUGFeRD invoice xml files"
-  s.authors     = ["Jan Krutisch"]
-  s.email       = 'jan@krutisch.de'
+  s.authors     = ["miceportal team"]
+  s.email       = "info@miceportal.de"
   s.files       = file_list('lib/**/*.rb', 'bin/*.jar', 'schemas/**/*', 'README.md')
-  s.homepage    = 'https://github.com/halfbyte/ruby-secretariat'
+  s.homepage    = "https://github.com/konvenit/ruby-secretariat"
   s.license       = 'Apache-2.0'
 
   s.required_ruby_version = '>= 2.6.0'
