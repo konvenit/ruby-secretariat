@@ -88,6 +88,10 @@ module Secretariat
           taxes[line_item.tax_percent].tax_amount += BigDecimal(line_item.tax_amount)
           taxes[line_item.tax_percent].base_amount += BigDecimal(line_item.net_amount) * line_item.quantity
         end
+
+        unless taxes[line_item.tax_percent].category_code == :TAXEXEMPT
+          taxes[line_item.tax_percent].category_code = line_item.tax_category
+        end
       end
 
       if tax_calculation_method == :VERTICAL
@@ -280,6 +284,7 @@ module Secretariat
                 end
               end
               taxes.each do |tax|
+                self.tax_category = tax.category_code
                 xml['ram'].ApplicableTradeTax do
                   Helpers.currency_element(xml, 'ram', 'CalculatedAmount', tax.tax_amount, currency_code, add_currency: version == 1)
                   xml['ram'].TypeCode 'VAT'

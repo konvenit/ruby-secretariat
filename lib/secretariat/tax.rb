@@ -22,6 +22,7 @@ module Secretariat
     :tax_amount,
     :tax_category,
     :base_amount,
+    :category_code,
     keyword_init: true
   ) do
 
@@ -29,6 +30,7 @@ module Secretariat
       super
       self.tax_amount = 0
       self.base_amount = 0
+      self.category_code = :STANDARDRATE
     end
 
     def untaxable?
