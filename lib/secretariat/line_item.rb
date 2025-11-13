@@ -74,7 +74,7 @@ module Secretariat
       tax = BigDecimal(tax_amount)
       unit_price = net_price * BigDecimal(billed_quantity.abs)
 
-      if charge_price != unit_price
+      if charge_price != unit_price.round(2)
         @errors << "charge price and gross price times quantity deviate: #{charge_price} / #{unit_price}"
         return false
       end
@@ -91,7 +91,7 @@ module Secretariat
         calculated_tax = charge_price * BigDecimal(tax_percent) / BigDecimal(100)
         calculated_tax = calculated_tax.round(2)
         calculated_tax = -calculated_tax if billed_quantity.negative?
-        if calculated_tax != tax
+        if calculated_tax != tax.round(2)
           @errors << "Tax and calculated tax deviate: #{tax} / #{calculated_tax}"
           return false
         end
