@@ -170,7 +170,10 @@ module Secretariat
         city: 'Hamburg',
         postal_code: '20253',
         country_id: 'DE',
-        vat_id: 'DE304755032'
+        vat_id: 'DE304755032',
+        contact_name: 'Depfu Buchhaltung',
+        contact_phone: '+49 40 123456',
+        contact_email: 'billing@depfu.com'
       )
       buyer = TradeParty.new(
         name: 'Depfu inc',
@@ -452,6 +455,16 @@ module Secretariat
         end
       end
       assert_equal [], errors
+    end
+
+    def test_seller_contact_is_rendered_for_v2
+      xml = make_de_invoice.to_xml(version: 2)
+      doc = Nokogiri::XML(xml)
+      contact = doc.at_xpath('//ram:SellerTradeParty/ram:DefinedTradeContact', 'ram' => 'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100')
+      assert contact, 'expected DefinedTradeContact to be rendered'
+      assert_equal 'Depfu Buchhaltung', contact.at_xpath('ram:PersonName', 'ram' => 'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100').text
+      assert_equal '+49 40 123456', contact.at_xpath('ram:TelephoneUniversalCommunication/ram:CompleteNumber', 'ram' => 'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100').text
+      assert_equal 'billing@depfu.com', contact.at_xpath('ram:EmailURIUniversalCommunication/ram:URIID', 'ram' => 'urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100').text
     end
 
     def test_simple_de_invoice_v2

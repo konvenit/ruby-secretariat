@@ -19,8 +19,13 @@ module Secretariat
   
   TradeParty = Struct.new('TradeParty',
     :name, :street1, :street2, :city, :postal_code, :country_id, :vat_id, :global_id, :global_id_scheme_id, :tax_id,
+    :contact_name, :contact_phone, :contact_email,
     keyword_init: true,
   ) do
+    def contact?
+      contact_name.present? || contact_phone.present? || contact_email.present?
+    end
+
     def to_xml(xml, exclude_tax: false, version: 2)
       if global_id.present? && global_id_scheme_id.present?
         xml['ram'].GlobalID(schemeID: global_id_scheme_id) do
@@ -28,6 +33,24 @@ module Secretariat
         end
       end
       xml['ram'].Name name
+      if version == 2 && contact?
+        # EN16931 BG-6 SELLER CONTACT (required by XRechnung CIUS rule BR-DE-2)
+        xml['ram'].DefinedTradeContact do
+          if contact_name.present?
+            xml['ram'].PersonName contact_name
+          end
+          if contact_phone.present?
+            xml['ram'].TelephoneUniversalCommunication do
+              xml['ram'].CompleteNumber contact_phone
+            end
+          end
+          if contact_email.present?
+            xml['ram'].EmailURIUniversalCommunication do
+              xml['ram'].URIID contact_email
+            end
+          end
+        end
+      end
       xml['ram'].PostalTradeAddress do
         xml['ram'].PostcodeCode postal_code
         xml['ram'].LineOne street1
