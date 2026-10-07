@@ -32,6 +32,8 @@ module Secretariat
     :charge_amount,
     :origin_country_code,
     :currency_code,
+    :service_period_start, # if start present start & end are required
+    :service_period_end, # end has to be on or after start (secretariat does not validate this)
     :basis_quantity,
     keyword_init: true
   ) do
@@ -72,7 +74,7 @@ module Secretariat
       gross_price = BigDecimal(gross_amount)
       charge_price = BigDecimal(charge_amount)
       tax = BigDecimal(tax_amount)
-      unit_price = net_price * BigDecimal(billed_quantity.abs)
+      unit_price = (net_price * BigDecimal(billed_quantity.abs)).round(2)
 
       if charge_price != unit_price
         @errors << "charge price and gross price times quantity deviate: #{charge_price} / #{unit_price}"
@@ -171,7 +173,7 @@ module Secretariat
                   xml['udt'].Indicator 'false'
                 end
                 Helpers.currency_element(xml, 'ram', 'ActualAmount', discount_amount, currency_code, add_currency: version == 1)
-                xml['ram'].Reason discount_reason
+                xml['ram'].Reason discount_reason if discount_reason
               end
             end
             if version == 1 && discount_amount
@@ -180,7 +182,7 @@ module Secretariat
                   xml['udt'].Indicator 'false'
                 end
                 Helpers.currency_element(xml, 'ram', 'ActualAmount', discount_amount, currency_code, add_currency: version == 1)
-                xml['ram'].Reason discount_reason
+                xml['ram'].Reason discount_reason if discount_reason
               end
             end
           end
@@ -213,6 +215,22 @@ module Secretariat
               xml['ram'].send(percent,Helpers.format(tax_percent))            
             end
           end
+
+          if version == 2 && self.service_period_start && self.service_period_end
+            xml['ram'].BillingSpecifiedPeriod do
+              xml['ram'].StartDateTime do
+                xml['udt'].DateTimeString(format: '102') do
+                  xml.text(service_period_start.strftime("%Y%m%d"))
+                end
+              end
+              xml['ram'].EndDateTime do
+                xml['udt'].DateTimeString(format: '102') do
+                  xml.text(service_period_end.strftime("%Y%m%d"))
+                end
+              end
+            end
+          end
+
           monetary_summation = by_version(version, 'SpecifiedTradeSettlementMonetarySummation', 'SpecifiedTradeSettlementLineMonetarySummation')
           xml['ram'].send(monetary_summation) do
             Helpers.currency_element(xml, 'ram', 'LineTotalAmount', (billed_quantity.negative? ? -charge_amount  : charge_amount), currency_code, add_currency: version == 1)
