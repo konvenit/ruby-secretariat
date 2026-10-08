@@ -107,6 +107,13 @@ module Secretariat
       return true
     end
 
+    # The line total (BT-131) as it adds up to the VAT base: negative for a
+    # negative quantity, since the amounts themselves are kept positive.
+    def signed_charge_amount
+      charge = BigDecimal(charge_amount)
+      billed_quantity.negative? ? -charge : charge
+    end
+
     def unit_code
       UNIT_CODES[unit] || 'C62'
     end

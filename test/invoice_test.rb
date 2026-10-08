@@ -926,6 +926,41 @@ module Secretariat
       assert_equal ["Tax amount 0.0 and summed up item tax amounts 3.8 deviate"], invoice.errors
     end
 
+    # Two days, 120 participants, 5,000.00 net per day: the unit price is stored
+    # with four decimals (41.6667), so 41.6667 x 120 = 5000.004 while each line
+    # total is 5000.00. Summing unit price x quantity drifts to 10000.008 and
+    # rounds to 10000.01, a cent off the lines it is made of.
+    def test_vat_base_is_the_sum_of_the_line_totals
+      line_items = %w[Day1 Day2].map do |day|
+        LineItem.new(
+          name: "Conference package #{day}",
+          billed_quantity: BigDecimal('120'),
+          unit: :PIECE,
+          gross_amount: BigDecimal('41.6667'),
+          net_amount: BigDecimal('41.6667'),
+          charge_amount: BigDecimal('5000.00'),
+          tax_category: :STANDARDRATE,
+          tax_percent: '19',
+          tax_amount: BigDecimal('950.00'),
+          origin_country_code: 'DE',
+          currency_code: 'EUR'
+        )
+      end
+      invoice = make_de_invoice
+      invoice.currency_code = 'EUR'
+      invoice.tax_calculation_method = :ITEM_BASED
+      invoice.line_items = line_items
+      invoice.basis_amount = '10000.00'
+      invoice.tax_amount = '1900.00'
+      invoice.grand_total_amount = '11900.00'
+      invoice.due_amount = '11900.00'
+      invoice.paid_amount = 0
+
+      assert invoice.valid?, invoice.errors.inspect
+      xml = invoice.to_xml(version: 2)
+      assert_match(%r{<ram:BasisAmount>10000.00</ram:BasisAmount>}, xml)
+    end
+
     def test_invoice_with_quantity_causing_sub_cent_amounts
       errors = []
 
