@@ -132,9 +132,10 @@ module Secretariat
         return false
       end
       if tax_calculation_method == :ITEM_BASED
-        line_items_tax_amount = line_items.sum(&:tax_amount)
-        if tax_amount != line_items_tax_amount
-          @errors << "Tax amount #{tax_amount} and summed up item tax amounts #{line_items_tax_amount} deviate"
+        line_items_tax_amount = line_items.sum(BigDecimal(0)) { |item| BigDecimal(item.tax_amount) }
+        if tax != line_items_tax_amount
+          @errors << "Tax amount #{tax.to_s('F')} and summed up item tax amounts #{line_items_tax_amount.to_s('F')} deviate"
+          return false
         end
       elsif tax_calculation_method != :NONE
         taxes.each do |tax|
