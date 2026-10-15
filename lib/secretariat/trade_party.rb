@@ -21,8 +21,19 @@ module Secretariat
     :id,
     :name, :street1, :street2, :city, :postal_code, :country_id, :vat_id, :global_id, :global_id_scheme_id, :tax_id,
     :person_name, :legal_organization,
+    :contact_name, :contact_phone, :contact_email,
     keyword_init: true,
   ) do
+    # BG-6 / BG-9 contact. contact_name is the fork's name for upstream's
+    # person_name (BT-56); both feed the single DefinedTradeContact element.
+    def contact?
+      contact_person_name.present? || contact_phone.present? || contact_email.present?
+    end
+
+    def contact_person_name
+      contact_name.present? ? contact_name : person_name
+    end
+
     def to_xml(xml, exclude_tax: false, version: 2)
       if id && !exclude_tax
         xml['ram'].ID id # BT-46
@@ -41,9 +52,22 @@ module Secretariat
           end
         end
       end
-      if person_name
+      if version == 2 && contact?
+        # EN16931 BG-6 SELLER CONTACT (required by XRechnung CIUS rule BR-DE-2)
         xml['ram'].DefinedTradeContact do
-          xml['ram'].PersonName person_name
+          if contact_person_name.present?
+            xml['ram'].PersonName contact_person_name
+          end
+          if contact_phone.present?
+            xml['ram'].TelephoneUniversalCommunication do
+              xml['ram'].CompleteNumber contact_phone
+            end
+          end
+          if contact_email.present?
+            xml['ram'].EmailURIUniversalCommunication do
+              xml['ram'].URIID contact_email
+            end
+          end
         end
       end
       xml['ram'].PostalTradeAddress do
