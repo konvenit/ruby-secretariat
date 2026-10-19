@@ -918,6 +918,31 @@ module Secretariat
       assert_match(%r{<ram:ID schemeID="0002">304755032</ram:ID>}, xml)
     end
 
+    def test_electronic_addresses_of_seller_and_buyer
+      invoice = make_eu_invoice
+      invoice.seller.electronic_address = 'invoices@depfu.com'
+      invoice.seller.electronic_address_scheme_id = 'EM'
+      invoice.buyer.electronic_address = 'accounting@example.se'
+      invoice.buyer.electronic_address_scheme_id = 'EM'
+      xml = invoice.to_xml(version: 2)
+
+      assert_match(%r{</ram:PostalTradeAddress>\s*<ram:URIUniversalCommunication>\s*<ram:URIID schemeID="EM">invoices@depfu.com</ram:URIID>\s*</ram:URIUniversalCommunication>\s*<ram:SpecifiedTaxRegistration>}, xml)
+      assert_equal 1, xml.scan('accounting@example.se').size # not repeated in the ShipToTradeParty
+      assert_equal [], Validator.new(xml, version: 2).validate_against_schematron
+    end
+
+    def test_electronic_address_without_scheme_is_omitted
+      invoice = make_de_invoice
+      invoice.seller.electronic_address = 'invoices@depfu.com'
+      xml = invoice.to_xml(version: 2)
+      refute_match(/URIUniversalCommunication/, xml)
+    end
+
+    def test_no_electronic_address_by_default
+      xml = make_de_invoice.to_xml(version: 2)
+      refute_match(/URIUniversalCommunication/, xml)
+    end
+
     # A gross-leading row: the gross price is fixed, net and VAT are derived from
     # it, so the row's VAT (27.21) is one cent below net x rate (27.2153 -> 27.22).
     def make_gross_leading_invoice(line_tax:, invoice_tax:)
