@@ -935,12 +935,12 @@ module Secretariat
       invoice = make_de_invoice
       invoice.seller.electronic_address = 'invoices@depfu.com'
       xml = invoice.to_xml(version: 2)
-      refute_match(/URIUniversalCommunication/, xml)
+      refute_match(/<ram:URIUniversalCommunication>/, xml)
     end
 
     def test_no_electronic_address_by_default
       xml = make_de_invoice.to_xml(version: 2)
-      refute_match(/URIUniversalCommunication/, xml)
+      refute_match(/<ram:URIUniversalCommunication>/, xml)
     end
 
     # A gross-leading row: the gross price is fixed, net and VAT are derived from
