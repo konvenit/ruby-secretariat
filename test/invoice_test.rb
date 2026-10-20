@@ -943,6 +943,20 @@ module Secretariat
       refute_match(/<ram:URIUniversalCommunication>/, xml)
     end
 
+    def test_origin_country_is_written_when_given
+      xml = make_de_invoice.to_xml(version: 2)
+      assert_match(%r{<ram:OriginTradeCountry>\s*<ram:ID>DE</ram:ID>\s*</ram:OriginTradeCountry>}, xml)
+    end
+
+    def test_line_without_origin_country
+      invoice = make_eu_invoice
+      invoice.line_items.each { |line_item| line_item.origin_country_code = nil }
+      xml = invoice.to_xml(version: 2)
+
+      refute_match(/OriginTradeCountry/, xml)
+      assert_equal [], Validator.new(xml, version: 2).validate_against_schematron
+    end
+
     # A gross-leading row: the gross price is fixed, net and VAT are derived from
     # it, so the row's VAT (27.21) is one cent below net x rate (27.2153 -> 27.22).
     def make_gross_leading_invoice(line_tax:, invoice_tax:)
