@@ -957,6 +957,30 @@ module Secretariat
       assert_equal [], Validator.new(xml, version: 2).validate_against_schematron
     end
 
+    def test_payment_terms_text_is_written_when_given
+      invoice = make_eu_invoice
+      invoice.payment_terms_text = 'Zahlbar innerhalb von 14 Tagen'
+      xml = invoice.to_xml(version: 2)
+
+      assert_match(%r{<ram:SpecifiedTradePaymentTerms>\s*<ram:Description>Zahlbar innerhalb von 14 Tagen</ram:Description>}, xml)
+    end
+
+    def test_no_payment_terms_text_by_default
+      xml = make_eu_invoice.to_xml(version: 2)
+
+      refute_match(%r{<ram:SpecifiedTradePaymentTerms>\s*<ram:Description>}, xml)
+      assert_match(/<ram:DueDateDateTime>/, xml)
+      assert_equal [], Validator.new(xml, version: 2).validate_against_schematron
+    end
+
+    def test_no_payment_terms_without_text_due_date_or_mandate
+      invoice = make_eu_invoice
+      invoice.payment_due_date = nil
+      xml = invoice.to_xml(version: 2)
+
+      refute_match(/SpecifiedTradePaymentTerms/, xml)
+    end
+
     # A gross-leading row: the gross price is fixed, net and VAT are derived from
     # it, so the row's VAT (27.21) is one cent below net x rate (27.2153 -> 27.22).
     def make_gross_leading_invoice(line_tax:, invoice_tax:)
