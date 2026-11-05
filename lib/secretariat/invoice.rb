@@ -95,14 +95,17 @@ module Secretariat
         return [tax]
       end
 
+      # Keyed by numeric rate: "0.0", "0" and a missing rate share one breakdown per category.
       line_items.each do |line_item|
+        rate = BigDecimal(line_item.tax_percent || 0)
+        key = [line_item.tax_category, rate]
         if line_item.tax_percent.nil?
-          taxes['0'] = Tax.new(tax_percent: BigDecimal(0), tax_category: line_item.tax_category, tax_amount: BigDecimal(0)) if taxes['0'].nil?
-          taxes['0'].base_amount += line_item.signed_charge_amount
+          taxes[key] = Tax.new(tax_percent: rate, tax_category: line_item.tax_category, tax_amount: BigDecimal(0)) if taxes[key].nil?
+          taxes[key].base_amount += line_item.signed_charge_amount
         else
-          taxes[line_item.tax_percent] = Tax.new(tax_percent: BigDecimal(line_item.tax_percent), tax_category: line_item.tax_category) if taxes[line_item.tax_percent].nil?
-          taxes[line_item.tax_percent].tax_amount += BigDecimal(line_item.tax_amount)
-          taxes[line_item.tax_percent].base_amount += line_item.signed_charge_amount
+          taxes[key] = Tax.new(tax_percent: rate, tax_category: line_item.tax_category) if taxes[key].nil?
+          taxes[key].tax_amount += BigDecimal(line_item.tax_amount)
+          taxes[key].base_amount += line_item.signed_charge_amount
         end
       end
 
