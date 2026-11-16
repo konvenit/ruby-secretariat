@@ -981,6 +981,36 @@ module Secretariat
       refute_match(/SpecifiedTradePaymentTerms/, xml)
     end
 
+    def make_zero_priced_line(tax_category:, tax_percent:)
+      LineItem.new(
+        name: 'Breakfast',
+        quantity: 1,
+        gross_amount: BigDecimal('0'),
+        net_amount: BigDecimal('0'),
+        unit: :PIECE,
+        charge_amount: BigDecimal('0'),
+        tax_category: tax_category,
+        tax_percent: tax_percent,
+        tax_amount: 0,
+        origin_country_code: 'DE',
+        currency_code: 'EUR'
+      )
+    end
+
+    def test_zero_priced_line_stays_in_its_vat_rate_breakdown
+      invoice = make_de_invoice
+      invoice.line_items << make_zero_priced_line(tax_category: :STANDARDRATE, tax_percent: '19.0')
+
+      assert_equal [BigDecimal('19')], invoice.taxes.map(&:tax_percent)
+    end
+
+    def test_zero_priced_line_joins_the_zero_rate_breakdown
+      invoice = make_eu_invoice
+      invoice.line_items << make_zero_priced_line(tax_category: :REVERSECHARGE, tax_percent: '0.0')
+
+      assert_equal 1, invoice.taxes.size
+    end
+
     # A gross-leading row: the gross price is fixed, net and VAT are derived from
     # it, so the row's VAT (27.21) is one cent below net x rate (27.2153 -> 27.22).
     def make_gross_leading_invoice(line_tax:, invoice_tax:)
